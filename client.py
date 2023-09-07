@@ -5,6 +5,16 @@ import requests
 from engine.entry import Entry
 
 
+logo = ''' ________  ___  _____ ______   ________  ___       _______   ___  __    ___      ___ 
+|\   ____\|\  \|\   _ \  _   \|\   __  \|\  \     |\  ___ \ |\  \|\  \ |\  \    /  /|
+\ \  \___|\ \  \ \  \\\__\ \  \ \  \|\  \ \  \    \ \   __/|\ \  \/  /|\ \  \  /  / /
+ \ \_____  \ \  \ \  \\|__| \  \ \   ____\ \  \    \ \  \_|/_\ \   ___  \ \  \/  / / 
+  \|____|\  \ \  \ \  \    \ \  \ \  \___|\ \  \____\ \  \_|\ \ \  \\ \  \ \    / /  
+    ____\_\  \ \__\ \__\    \ \__\ \__\    \ \_______\ \_______\ \__\\ \__\ \__/ /   
+   |\_________\|__|\|__|     \|__|\|__|     \|_______|\|_______|\|__| \|__|\|__|/    
+   \|_________|                                                                      
+'''
+
 def send_command_once(host, port, command):
     url = f'{host}:{port}'
     entry = Entry.model_validate(dict(
@@ -51,6 +61,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     os.system('cls')
+    print(logo)
     print('Designed by Koorye 2023, all copyright reserved!')
 
     ports = [int(p) for p in args.ports.split(',')]
