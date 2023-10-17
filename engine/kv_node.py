@@ -1,5 +1,4 @@
-import re
-
+from .db import Database
 from .raft import RaftNode
 
 
@@ -7,10 +6,9 @@ class KVNode(RaftNode):
     def __init__(self, 
                  cfg, 
                  logger,
-                 api,
-                 kv_store):
+                 api):
         super().__init__(cfg, logger, api)
-        self.kv_store = kv_store
+        self.db = Database
 
     def recv_command(self, entry):
         self._parse_log(f'recv command "{entry.command}" from {entry.role}')
@@ -36,10 +34,10 @@ class KVNode(RaftNode):
 
         # client -> leader, accept and send to followers
         # if more than half of followers accepted, do commit
+
         # for read-only command, only leader accept
-        if entry.command.strip().split()[0] in ['show', 'get', 'all']:
-            result = self._parse_command(entry)
-            return result
+        if entry.command.strip().split()[0] in ['select']:
+            return self._exec_command(entry)
 
         # send command to followers
         entry.role = self.role
@@ -52,7 +50,7 @@ class KVNode(RaftNode):
         if len(actives) + 1 > self.cfg['num_nodes'] / 2:
             # if number of active nodes is enough, send commit to followers
             self.api.send_commit(self._parse_entry('commit'))
-            return self._parse_command(entry)
+            return self._exec_command(entry)
         else:
             return 'Command is failed to commit because number of node is not enough!'
     
@@ -65,41 +63,9 @@ class KVNode(RaftNode):
         self._entry_wait_to_commit = entry
         return 'OK'
     
-    def _parse_command(self, entry):
-        command = re.sub(r'\s+', ' ', entry.command)
-        opts = command.strip().split()
-        op = opts[0]
+    def _exec_command(self, entry):
+        return self.db.exec(entry['command'])
         
-        if op == 'show':
-            if len(opts) != 1:
-                return 'Command must be like "show"'
-            
-            return self._show()
-        
-        elif op == 'get':
-            if len(opts) != 2:
-                return 'Command must be like "get <k>"'
-
-            k = opts[1]
-            return self.kv_store.get(k)
-
-        elif op == 'set':
-            if len(opts) != 3:
-                return 'Command must be like "get <k> <v>"'
-
-            k, v = opts[1], opts[2]
-            self.entry_idx += 1
-            return self.kv_store.set(k, v)
-        
-        elif op == 'all':
-            if len(opts) != 1:
-                return 'Command must be like "all"'
-
-            return self.kv_store.all()
-
-        else:
-            return f'Operation {op} is not supported!'
-
     def _show(self):
         string = f'Leader node: {self.id}, port: {self.api.port}\n'
         string += 'All nodes:\n'
