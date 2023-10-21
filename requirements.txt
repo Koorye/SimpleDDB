@@ -1,0 +1,3 @@
+anytree==2.11.1
+pandas==1.5.3
+rpyc==5.3.1
