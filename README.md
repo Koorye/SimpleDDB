@@ -10,14 +10,14 @@ pip install -r requirements.txt
 
 2. Start server nodes.
 ```shell
-python app.py --port 8001 --host-ports 127.0.0.1:8001 127.0.0.1:8002 127.0.0.1:8003
-python app.py --port 8002 --host-ports 127.0.0.1:8001 127.0.0.1:8002 127.0.0.1:8003
-python app.py --port 8003 --host-ports 127.0.0.1:8001 127.0.0.1:8002 127.0.0.1:8003
+python app.py --port 8000 --host-ports 127.0.0.1:8000 127.0.0.1:8001 127.0.0.1:8002
+python app.py --port 8001 --host-ports 127.0.0.1:8000 127.0.0.1:8001 127.0.0.1:8002
+python app.py --port 8002 --host-ports 127.0.0.1:8000 127.0.0.1:8001 127.0.0.1:8002
 ```
 
 3. Start client.
 ```shell
-python client --host 127.0.0.1 --port 8001
+python client --host 127.0.0.1 --port 8000
 ```
 
 4. Then you can enter sql in the client screen!
