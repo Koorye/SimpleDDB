@@ -1,4 +1,4 @@
-id,username,password,phone
-1,"user1","pass1",
-2,"user2","pass2","12312312312"
-,3,"user3",
+id,name,phone,email
+1,"koorye",,
+2,"koorye2","123123123",
+3,"koorye3","123123123","test@mail.com"

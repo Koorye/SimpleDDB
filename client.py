@@ -1,78 +1,62 @@
 import argparse
-import os
-import requests
+import rpyc
 
-from engine.entry import Entry
+from engine.utils import clear_screen
 
 
-logo = ''' ________  ___  _____ ______   ________  ___       _______   ___  __    ___      ___ 
-|\   ____\|\  \|\   _ \  _   \|\   __  \|\  \     |\  ___ \ |\  \|\  \ |\  \    /  /|
-\ \  \___|\ \  \ \  \\\__\ \  \ \  \|\  \ \  \    \ \   __/|\ \  \/  /|\ \  \  /  / /
- \ \_____  \ \  \ \  \\|__| \  \ \   ____\ \  \    \ \  \_|/_\ \   ___  \ \  \/  / / 
-  \|____|\  \ \  \ \  \    \ \  \ \  \___|\ \  \____\ \  \_|\ \ \  \\ \  \ \    / /  
-    ____\_\  \ \__\ \__\    \ \__\ \__\    \ \_______\ \_______\ \__\\ \__\ \__/ /   
-   |\_________\|__|\|__|     \|__|\|__|     \|_______|\|_______|\|__| \|__|\|__|/    
-   \|_________|                                                                      
+logo = r''' 
+   _____ _                 _      _____  ____  
+  / ____(_)               | |    |  __ \|  _ \ 
+ | (___  _ _ __ ___  _ __ | | ___| |  | | |_) |
+  \___ \| | '_ ` _ \| '_ \| |/ _ \ |  | |  _ < 
+  ____) | | | | | | | |_) | |  __/ |__| | |_) |
+ |_____/|_|_| |_| |_| .__/|_|\___|_____/|____/ 
+                    | |                        
+                    |_|                        
 '''
 
-def send_command_once(host, port, command):
-    url = f'{host}:{port}'
-    entry = Entry.model_validate(dict(
-        index=-1,
-        node=-1, 
-        role='client', 
-        command=command,
-    ))
-    resp = requests.post(url + '/command', data=entry.model_dump_json())
 
-    if resp.status_code != 200:
-        return Entry.model_validate(dict(
-            index=-1,
-            node=-1, 
-            role='unknown', 
-            msg='HTTP Connection ERROR',
-        ))
-    return Entry.model_validate_json(resp.json())
+def try_connect(host, port):
+    try:
+        with rpyc.connect(host, port) as conn:
+            conn.root.handle_client_req('ping')
+        return True
+    except BaseException as e:
+        print(e)
+        print('[ERROR] Server is not available!')
+        return False
 
 
-def find_leader(host, ports):
-    for port in ports:
-        entry = send_command_once(host, port, 'show')
-        if entry.role == 'leader':
-            return port
-    
-    print('No leader node is found!')
-    exit(-1)
-
-def send_command(host, port, ports, command):
-    entry = send_command_once(host, port, command)
-
-    while entry.role != 'leader':
-        port = find_leader(host, ports)
-        entry = send_command_once(host, port, command)
-
-    return entry.msg, port
+def send_command(host, port, command):
+    with rpyc.connect(host, port) as conn:
+        result = conn.root.handle_client_req(command)
+    return result
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--host', type=str, default='http://localhost')
-    parser.add_argument('--ports', type=str, default='5001,5002,5003')
+    parser.add_argument('--host', type=str)
+    parser.add_argument('--port', type=int)
     args = parser.parse_args()
+    host = args.host
+    port = args.port
 
-    os.system('cls')
+    result = try_connect(host, port)
+    if result == False:
+        exit(-1)
+
+    clear_screen()
     print(logo)
     print('Designed by Koorye 2023, all copyright reserved!')
-
-    ports = [int(p) for p in args.ports.split(',')]
-    port = find_leader(args.host, ports)
-    result, port = send_command(args.host, port, ports, 'show')
-    print(result)
+    print('Welcome to SimpleDB!')
 
     while True:
-        command = input('> ')
+        command = input('> ').strip()
         if command == 'clear':
-            os.system('cls')
+            clear_screen()
+        elif command == 'exit':
+            print('Bye.')
+            exit(-1)
         else:
-            result, port = send_command(args.host, port, ports, command)
+            result = send_command(host, port, command)
             print(result)
